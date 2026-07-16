@@ -1,2 +1,4 @@
 .vscode/
 out/
+src/main/resources/mnist.pkl
+src/main/resources/mnist_export/
