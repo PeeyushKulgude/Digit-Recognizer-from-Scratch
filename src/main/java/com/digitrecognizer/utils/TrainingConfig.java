@@ -40,7 +40,7 @@ public class TrainingConfig {
 
     private static Properties loadProperties() {
         Properties properties = new Properties();
-        Path configPath = Paths.get("env", "training.properties");
+        Path configPath = Paths.get("src/main/java/com/digitrecognizer/env", "training.properties");
 
         if (Files.exists(configPath)) {
             try (InputStream inputStream = Files.newInputStream(configPath)) {
