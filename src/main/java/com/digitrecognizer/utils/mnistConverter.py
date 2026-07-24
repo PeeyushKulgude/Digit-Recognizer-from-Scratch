@@ -14,9 +14,9 @@ X_train, y_train = train_set
 X_val, y_val = valid_set
 X_test, y_test = test_set
 
-X_train = np.asarray(X_train, dtype=np.float32) / 255.0
-X_val = np.asarray(X_val, dtype=np.float32) / 255.0
-X_test = np.asarray(X_test, dtype=np.float32) / 255.0
+X_train = np.asarray(X_train, dtype=np.float32)
+X_val = np.asarray(X_val, dtype=np.float32)
+X_test = np.asarray(X_test, dtype=np.float32)
 
 y_train = np.asarray(y_train, dtype=np.int32)
 y_val = np.asarray(y_val, dtype=np.int32)

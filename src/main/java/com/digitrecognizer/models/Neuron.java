@@ -5,17 +5,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Neuron {
+
     Value[] weights;
     Value bias;
     int numInputs;
+    boolean isOutputLayer;
 
-    public Neuron(int numInputs) {
+    public Neuron(int numInputs, boolean isOutputLayer) {
         this.numInputs = numInputs;
+        this.isOutputLayer = isOutputLayer;
         weights = new Value[numInputs];
         for (int i = 0; i < numInputs; i++) {
-            weights[i] = new Value(Math.random() * 2 - 1); // Random weights between -1 and 1
+            weights[i] = new Value((Math.random() * 2 - 1) * Math.sqrt(2.0 / numInputs));
         }
-        bias = new Value(Math.random() * 2 - 1); // Random bias between -1 and 1
+        bias = new Value(0); // Zero bias
     }
 
     public List<Value> parameters() {
@@ -35,6 +38,9 @@ public class Neuron {
         Value sum = bias;
         for (int i = 0; i < inputs.length; i++) {
             sum = sum.add(inputs[i].multiply(weights[i]));
+        }
+        if (isOutputLayer) {
+            return sum; // No activation function for output layer
         }
         return sum.tanh(); // Activation function
     }

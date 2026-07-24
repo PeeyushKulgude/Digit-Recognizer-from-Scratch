@@ -1,69 +1,25 @@
 package com.digitrecognizer.utils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Properties;
-
 public class TrainingConfig {
-    private static final Properties PROPERTIES = loadProperties();
+
+    private static final String MNIST_CSV_FOLDER_PATH = "src/main/resources/mnist_export";
+    private static final double LEARNING_RATE = 0.1;
+    private static final int BATCH_SIZE = 40;
+    private static final int EPOCHS = 1;
 
     public static String getMnistCsvFolderPath() {
-        return getString("mnistCsvFolderPath", "src/main/resources/mnist_export");
+        return MNIST_CSV_FOLDER_PATH;
     }
 
     public static double getLearningRate() {
-        return getDouble("learningRate", 0.01);
+        return LEARNING_RATE;
     }
 
     public static int getBatchSize() {
-        return getInt("batchSize", 32);
+        return BATCH_SIZE;
     }
 
     public static int getEpochs() {
-        return getInt("epochs", 10);
-    }
-
-    public static int getInputSize() {
-        return getInt("inputSize", 784);
-    }
-
-    public static int getHiddenSize() {
-        return getInt("hiddenSize", 128);
-    }
-
-    public static int getOutputSize() {
-        return getInt("outputSize", 10);
-    }
-
-    private static Properties loadProperties() {
-        Properties properties = new Properties();
-        Path configPath = Paths.get("src/main/java/com/digitrecognizer/env", "training.properties");
-
-        if (Files.exists(configPath)) {
-            try (InputStream inputStream = Files.newInputStream(configPath)) {
-                properties.load(inputStream);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to load training properties", e);
-            }
-        }
-
-        return properties;
-    }
-
-    private static String getString(String key, String defaultValue) {
-        return PROPERTIES.getProperty(key, defaultValue);
-    }
-
-    private static double getDouble(String key, double defaultValue) {
-        String value = PROPERTIES.getProperty(key);
-        return value == null ? defaultValue : Double.parseDouble(value);
-    }
-
-    private static int getInt(String key, int defaultValue) {
-        String value = PROPERTIES.getProperty(key);
-        return value == null ? defaultValue : Integer.parseInt(value);
+        return EPOCHS;
     }
 }

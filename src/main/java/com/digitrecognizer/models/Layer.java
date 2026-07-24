@@ -5,16 +5,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Layer {
+
     private final Neuron[] neurons;
     private final int nin, nout;
+    private final boolean isOutputLayer;
 
-    public Layer(int nin, int nout) {
+    public Layer(int nin, int nout, boolean isOutputLayer) {
         this.nin = nin;
         this.nout = nout;
+        this.isOutputLayer = isOutputLayer;
 
         this.neurons = new Neuron[this.nout];
         for (int i = 0; i < this.nout; i++) {
-            this.neurons[i] = new Neuron(this.nin);
+            this.neurons[i] = new Neuron(this.nin, this.isOutputLayer);
         }
     }
 
