@@ -6,6 +6,7 @@ import com.digitrecognizer.utils.TrainingConfig;
 import com.digitrecognizer.utils.Value;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintStream;
 
 public class Runner {
@@ -36,7 +37,12 @@ public class Runner {
         System.out.println("Loaded y_test with shape: " + y_test.length + "x" + y_test[0].length);
     }
 
-    public void train() {
+    public void train() throws IOException {
+        File file = new File(TrainingConfig.getTrainingOutputFile());
+        file.delete();
+        PrintStream out = new PrintStream(file);
+        System.setOut(out);
+
         MLP mlp = new MLP(784, new int[]{128, 64, 10});
         int batchSize = TrainingConfig.getBatchSize();
         int batchCount = x_train.length / batchSize;
@@ -59,12 +65,17 @@ public class Runner {
                 mlp.zeroGrad();
                 batchLoss.backward();
                 for (Value param : mlp.parameters) {
-                    param.step(TrainingConfig.getLearningRate());
+                    param.step(TrainingConfig.getLearningRate(epoch));
                 }
                 System.out.println("Epoch " + (epoch + 1) + ", Batch " + (batchIndex + 1) + ", Batch Loss: " + batchLoss.data);
             }
             System.out.println("Epoch " + (epoch + 1) + ", Loss: " + (epochLoss / x_train.length));
+            
+            TrainingConfig.recalibrateLearningRate(epoch);
         }
+
+        mlp.save("mnist.model");
+
         // Testing the model
         int correctPredictions = 0;
         int incorrectPredictions = 0;
@@ -91,13 +102,42 @@ public class Runner {
         System.out.println("Incorrect Predictions: " + incorrectPredictions);
     }
 
-    public static void main(String[] args) throws FileNotFoundException {
-        File file = new File("output.txt");
+    public void test() throws IOException {
+        File file = new File(TrainingConfig.getTestingOutputFile());
         file.delete();
         PrintStream out = new PrintStream(file);
         System.setOut(out);
 
+        MLP trainedModel = MLP.load("mnist.model");
+
+        int correctPredictions = 0;
+        int incorrectPredictions = 0;
+        for (int i = 0; i < x_test.length; i++) {
+            int targetLabel = getTrueLabel(y_test[i]);
+            Value[] outputs = trainedModel.forward(x_test[i]);
+            Value[] ypred = trainedModel.softmax(outputs);
+            int predictedLabel = -1;
+            double maxProb = Double.NEGATIVE_INFINITY;
+            for (int j = 0; j < ypred.length; j++) {
+                if (ypred[j].data > maxProb) {
+                    maxProb = ypred[j].data;
+                    predictedLabel = j;
+                }
+            }
+            System.out.println("Test Sample " + (i + 1) + ": Predicted Label: " + predictedLabel + ", True Label: " + targetLabel);
+            if (predictedLabel == targetLabel) {
+                correctPredictions++;
+            } else {
+                incorrectPredictions++;
+            }
+        }
+        System.out.println("Correct Predictions: " + correctPredictions);
+        System.out.println("Incorrect Predictions: " + incorrectPredictions);
+    }
+
+    public static void main(String[] args) throws FileNotFoundException, IOException {
         Runner runner = new Runner();
-        runner.train();
+        // runner.train();
+        runner.test();
     }
 }

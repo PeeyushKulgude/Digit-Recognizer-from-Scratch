@@ -1,6 +1,11 @@
 package com.digitrecognizer.models;
 
 import com.digitrecognizer.utils.Value;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -87,6 +92,63 @@ public class MLP {
             loss = loss.add(new Value(-target[i]).multiply(predicted[i].log()));
         }
         return loss;
+    }
+
+    public Layer[] getLayers() {
+        return layers;
+    }
+
+    public void save(String filename) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+            writer.write(Integer.toString(nin));
+            writer.newLine();
+
+            writer.write(Integer.toString(layers.length));
+            writer.newLine();
+
+            for (Layer layer : layers) {
+                layer.save(writer);
+            }
+        }
+    }
+
+    public static MLP load(String filename) throws IOException {
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+
+            int nin = Integer.parseInt(reader.readLine());
+            int numLayers = Integer.parseInt(reader.readLine());
+
+            int[] layerSizes = new int[numLayers];
+
+            // Scan headers, skipping each layer's neuron data (weights+bias lines)
+            // in between, since save() interleaves header + data per layer.
+            for (int i = 0; i < numLayers; i++) {
+                String[] header = reader.readLine().split(" ");
+                int nout = Integer.parseInt(header[0]);
+                int layerNin = Integer.parseInt(header[1]);
+                layerSizes[i] = nout;
+
+                long linesToSkip = (long) nout * (layerNin + 1); // weights + bias per neuron
+                for (long j = 0; j < linesToSkip; j++) {
+                    reader.readLine();
+                }
+            }
+
+            MLP model = new MLP(nin, layerSizes);
+
+            // Reload reader from beginning to actually populate the values
+            try (BufferedReader r = new BufferedReader(new FileReader(filename))) {
+                r.readLine(); // nin
+                r.readLine(); // numLayers
+
+                for (Layer layer : model.layers) {
+                    layer.load(r);
+                }
+            }
+
+            return model;
+        }
     }
 
     @Override

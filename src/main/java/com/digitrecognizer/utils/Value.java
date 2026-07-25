@@ -1,5 +1,8 @@
 package com.digitrecognizer.utils;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -125,6 +128,15 @@ public class Value {
 
     public void step(double learningRate) {
         this.data -= learningRate * this.grad;
+    }
+
+    public void save(BufferedWriter writer) throws IOException {
+        writer.write(Double.toString(data));
+        writer.newLine();
+    }
+
+    public void load(BufferedReader reader) throws IOException {
+        data = Double.parseDouble(reader.readLine());
     }
 
     @Override

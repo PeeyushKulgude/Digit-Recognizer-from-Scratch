@@ -1,6 +1,9 @@
 package com.digitrecognizer.models;
 
 import com.digitrecognizer.utils.Value;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +31,32 @@ public class Neuron {
         }
         params.add(bias);
         return params;
+    }
+
+    public Value[] getWeights() {
+        return weights;
+    }
+
+    public Value getBias() {
+        return bias;
+    }
+
+    public void save(BufferedWriter writer) throws IOException {
+
+        for (Value weight : weights) {
+            weight.save(writer);
+        }
+
+        bias.save(writer);
+    }
+
+    public void load(BufferedReader reader) throws IOException {
+
+        for (Value weight : weights) {
+            weight.load(reader);
+        }
+
+        bias.load(reader);
     }
 
     public Value forward(Value[] inputs) {

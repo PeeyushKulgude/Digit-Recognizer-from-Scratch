@@ -1,6 +1,10 @@
 package com.digitrecognizer.models;
 
 import com.digitrecognizer.utils.Value;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,6 +43,30 @@ public class Layer {
             params.addAll(this.neurons[i].parameters());
         }
         return params;
+    }
+
+    public Neuron[] getNeurons() {
+        return neurons;
+    }
+
+    public void save(BufferedWriter writer) throws IOException {
+
+        writer.write(nout + " " + nin);
+        writer.newLine();
+
+        for (Neuron neuron : neurons) {
+            neuron.save(writer);
+        }
+    }
+
+    public void load(BufferedReader reader) throws IOException {
+
+        // consume header
+        reader.readLine();
+
+        for (Neuron neuron : neurons) {
+            neuron.load(reader);
+        }
     }
 
     @Override
