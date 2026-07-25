@@ -12,10 +12,12 @@ import java.io.PrintStream;
 public class Runner {
 
     private final MnistDataLoader dataLoader = new MnistDataLoader(TrainingConfig.getMnistCsvFolderPath());
-    private final double[][] x_train;
-    private final double[][] y_train;
-    private final double[][] x_test;
-    private final double[][] y_test;
+    private double[][] x_train;
+    private double[][] y_train;
+    private double[][] x_test;
+    private double[][] y_test;
+    private double[][] x_val;
+    private double[][] y_val;
 
     private int getTrueLabel(double[] oneHotEncoded) {
         for (int i = 0; i < oneHotEncoded.length; i++) {
@@ -27,14 +29,27 @@ public class Runner {
     }
 
     public Runner() {
+    }
+
+    public void loadTrainData() {
         x_train = dataLoader.loadXTrain();
         System.out.println("Loaded X_train with shape: " + x_train.length + "x" + x_train[0].length);
         y_train = dataLoader.loadYTrain();
         System.out.println("Loaded y_train with shape: " + y_train.length + "x" + y_train[0].length);
+    }
+
+    public void loadTestData() {
         x_test = dataLoader.loadXTest();
         System.out.println("Loaded X_test with shape: " + x_test.length + "x" + x_test[0].length);
         y_test = dataLoader.loadYTest();
         System.out.println("Loaded y_test with shape: " + y_test.length + "x" + y_test[0].length);
+    }
+
+    public void loadValidationData() {
+        x_val = dataLoader.loadXValidation();
+        System.out.println("Loaded X_validation with shape: " + x_val.length + "x" + x_val[0].length);
+        y_val = dataLoader.loadYValidation();
+        System.out.println("Loaded y_validation with shape: " + y_val.length + "x" + y_val[0].length);
     }
 
     public void train() throws IOException {
@@ -42,6 +57,9 @@ public class Runner {
         file.delete();
         PrintStream out = new PrintStream(file);
         System.setOut(out);
+
+        loadTrainData();
+        loadValidationData();
 
         MLP mlp = new MLP(784, new int[]{128, 64, 10});
         int batchSize = TrainingConfig.getBatchSize();
@@ -70,11 +88,11 @@ public class Runner {
                 System.out.println("Epoch " + (epoch + 1) + ", Batch " + (batchIndex + 1) + ", Batch Loss: " + batchLoss.data);
             }
             System.out.println("Epoch " + (epoch + 1) + ", Loss: " + (epochLoss / x_train.length));
-            
+
             TrainingConfig.recalibrateLearningRate(epoch);
         }
 
-        mlp.save("mnist.model");
+        mlp.save(TrainingConfig.getCurrentModelName());
 
         // Testing the model
         int correctPredictions = 0;
@@ -108,6 +126,8 @@ public class Runner {
         PrintStream out = new PrintStream(file);
         System.setOut(out);
 
+        loadTestData();
+
         MLP trainedModel = MLP.load("mnist.model");
 
         int correctPredictions = 0;
@@ -137,7 +157,7 @@ public class Runner {
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
         Runner runner = new Runner();
-        // runner.train();
+        runner.train();
         runner.test();
     }
 }

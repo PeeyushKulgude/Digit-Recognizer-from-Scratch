@@ -1,9 +1,11 @@
 package com.digitrecognizer.utils;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 public class TrainingConfig {
 
     private static final String MNIST_CSV_FOLDER_PATH = "src/main/resources/mnist_export";
-    private static double LEARNING_RATE = 0.06;
+    private static double LEARNING_RATE = 0.05;
     private static final int BATCH_SIZE = 40;
     private static final int EPOCHS = 10;
     private static final int NUM_CLASSES = 10;
@@ -40,5 +42,9 @@ public class TrainingConfig {
     
     public static String getTestingOutputFile() {
         return TESTING_OUTPUT_FILE;
+    }
+
+    public static String getCurrentModelName() {
+        return DateTimeFormatter.ofPattern("yyyy-MM-dd_HH").format(LocalDateTime.now()) + "_hrs" + ".model";
     }
 }
