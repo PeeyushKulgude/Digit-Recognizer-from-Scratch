@@ -19,6 +19,10 @@ public class Runner {
     private double[][] x_val;
     private double[][] y_val;
 
+    private double leastValidationLoss = Double.POSITIVE_INFINITY;
+    private int epochsSinceImprovement = 0;
+    private int lrReductions = 0;
+
     private int getTrueLabel(double[] oneHotEncoded) {
         for (int i = 0; i < oneHotEncoded.length; i++) {
             if (oneHotEncoded[i] == 1.0) {
@@ -29,6 +33,52 @@ public class Runner {
     }
 
     public Runner() {
+    }
+
+    private double evaluateValidationLoss(MLP mlp) {
+        double totalLoss = 0.0;
+        for (int i = 0; i < x_val.length; i++) {
+            Value[] outputs = mlp.forward(x_val[i]);
+            Value[] ypred = mlp.softmax(outputs);
+            Value loss = mlp.crossEntropyLoss(ypred, y_val[i]);
+            totalLoss += loss.data;
+        }
+        return totalLoss / x_val.length;
+    }
+
+    private boolean validateEpoch(MLP mlp, int epoch) throws IOException {
+        double valLoss = evaluateValidationLoss(mlp);
+        System.out.println("Epoch " + (epoch + 1) + ", Validation Loss: " + valLoss);
+
+        if (valLoss < leastValidationLoss - TrainingConfig.getMinDelta()) {
+            // Genuine improvement: reset patience counter and checkpoint the model.
+            leastValidationLoss = valLoss;
+            epochsSinceImprovement = 0;
+            System.out.println("Validation loss improved to " + valLoss + ".");
+            return false;
+        }
+
+        epochsSinceImprovement++;
+        System.out.println("No validation improvement for " + epochsSinceImprovement + " epoch(s) "
+                + "(best so far: " + leastValidationLoss + ").");
+
+        if (epochsSinceImprovement < TrainingConfig.getPlateauPatience()) {
+            return false;
+        }
+
+        if (lrReductions < TrainingConfig.getMaxLearningRateReductions()) {
+            TrainingConfig.recalibrateLearningRate(epoch);
+            lrReductions++;
+            epochsSinceImprovement = 0;
+            System.out.println("Validation loss plateaued. Reduced learning rate to "
+                    + TrainingConfig.getLearningRate(epoch) + " (reduction " + lrReductions + "/"
+                    + TrainingConfig.getMaxLearningRateReductions() + ").");
+            return false;
+        }
+
+        System.out.println("Validation loss plateaued and learning rate is already exhausted. "
+                + "Stopping early after epoch " + (epoch + 1) + ".");
+        return true;
     }
 
     public void loadTrainData() {
@@ -89,35 +139,13 @@ public class Runner {
             }
             System.out.println("Epoch " + (epoch + 1) + ", Loss: " + (epochLoss / x_train.length));
 
-            TrainingConfig.recalibrateLearningRate(epoch);
+            boolean shouldStop = validateEpoch(mlp, epoch);
+            if (shouldStop) {
+                break;
+            }
         }
 
         mlp.save(TrainingConfig.getCurrentModelName());
-
-        // Testing the model
-        int correctPredictions = 0;
-        int incorrectPredictions = 0;
-        for (int i = 0; i < 100; i++) {
-            int targetLabel = getTrueLabel(y_test[i]);
-            Value[] outputs = mlp.forward(x_test[i]);
-            Value[] ypred = mlp.softmax(outputs);
-            int predictedLabel = -1;
-            double maxProb = Double.NEGATIVE_INFINITY;
-            for (int j = 0; j < ypred.length; j++) {
-                if (ypred[j].data > maxProb) {
-                    maxProb = ypred[j].data;
-                    predictedLabel = j;
-                }
-            }
-            System.out.println("Test Sample " + (i + 1) + ": Predicted Label: " + predictedLabel + ", True Label: " + targetLabel);
-            if (predictedLabel == targetLabel) {
-                correctPredictions++;
-            } else {
-                incorrectPredictions++;
-            }
-        }
-        System.out.println("Correct Predictions: " + correctPredictions);
-        System.out.println("Incorrect Predictions: " + incorrectPredictions);
     }
 
     public void test() throws IOException {

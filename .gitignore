@@ -6,3 +6,4 @@ src/main/resources/mnist_export/
 training_output.txt
 testing_output.txt
 *.model
+temp
