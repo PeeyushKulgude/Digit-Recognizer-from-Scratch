@@ -2,6 +2,7 @@ package com.digitrecognizer.utils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+
 public class TrainingConfig {
 
     private static final String MNIST_CSV_FOLDER_PATH = "src/main/resources/mnist_export";
@@ -47,13 +48,13 @@ public class TrainingConfig {
     public static String getTrainingOutputFile() {
         return TRAINING_OUTPUT_FILE;
     }
-    
+
     public static String getTestingOutputFile() {
         return TESTING_OUTPUT_FILE;
     }
 
-    public static String getCurrentModelName() {
-        return DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_ss").format(LocalDateTime.now()) + ".model";
+    public static String getCurrentModelName(int epoch) {
+        return DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm").format(LocalDateTime.now()) + "_epoch_" + epoch + ".model";
     }
 
     public static int getPlateauPatience() {

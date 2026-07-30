@@ -6,8 +6,10 @@ import com.digitrecognizer.utils.TrainingConfig;
 import com.digitrecognizer.utils.Value;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Comparator;
 
 public class Runner {
 
@@ -102,16 +104,43 @@ public class Runner {
         System.out.println("Loaded y_validation with shape: " + y_val.length + "x" + y_val[0].length);
     }
 
-    public void train() throws IOException {
+    /**
+     * Finds the most recently modified ".model" file in the current working
+     * directory, or null if none exist.
+     */
+    private File findLatestModelFile() {
+        File dir = new File(".");
+        File[] modelFiles = dir.listFiles((d, name) -> name.endsWith(".model"));
+        if (modelFiles == null || modelFiles.length == 0) {
+            return null;
+        }
+        return java.util.Arrays.stream(modelFiles)
+                .max(Comparator.comparingLong(File::lastModified))
+                .orElse(null);
+    }
+
+    public void train(boolean loadLatestModel) throws IOException {
         File file = new File(TrainingConfig.getTrainingOutputFile());
         file.delete();
-        PrintStream out = new PrintStream(file);
+        PrintStream out = new PrintStream(new FileOutputStream(file), true);
         System.setOut(out);
 
         loadTrainData();
         loadValidationData();
 
-        MLP mlp = new MLP(784, new int[]{128, 64, 10});
+        MLP mlp;
+        if (loadLatestModel) {
+            File latestModel = findLatestModelFile();
+            if (latestModel != null) {
+                mlp = MLP.load(latestModel.getPath());
+                System.out.println("Loaded latest model from " + latestModel.getPath() + " to resume training.");
+            } else {
+                System.out.println("No existing .model file found. Starting training from scratch.");
+                mlp = new MLP(784, new int[]{128, 64, 10});
+            }
+        } else {
+            mlp = new MLP(784, new int[]{128, 64, 10});
+        }
         int batchSize = TrainingConfig.getBatchSize();
         int batchCount = x_train.length / batchSize;
 
@@ -139,19 +168,19 @@ public class Runner {
             }
             System.out.println("Epoch " + (epoch + 1) + ", Loss: " + (epochLoss / x_train.length));
 
+            mlp.save(TrainingConfig.getCurrentModelName(epoch));
+
             boolean shouldStop = validateEpoch(mlp, epoch);
             if (shouldStop) {
                 break;
             }
         }
-
-        mlp.save(TrainingConfig.getCurrentModelName());
     }
 
     public void test() throws IOException {
         File file = new File(TrainingConfig.getTestingOutputFile());
         file.delete();
-        PrintStream out = new PrintStream(file);
+        PrintStream out = new PrintStream(new FileOutputStream(file), true);
         System.setOut(out);
 
         loadTestData();
@@ -184,8 +213,10 @@ public class Runner {
     }
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
+        boolean loadLatestModel = args.length > 0 && Boolean.parseBoolean(args[0]);
+
         Runner runner = new Runner();
-        runner.train();
+        runner.train(loadLatestModel);
         runner.test();
     }
 }
