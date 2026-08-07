@@ -2,6 +2,7 @@ package com.digitrecognizer.utils;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -11,6 +12,9 @@ import java.time.format.DateTimeFormatter;
 public class TrainingConfig {
 
     private static final String MNIST_CSV_FOLDER_PATH = "src/main/resources/mnist_export";
+    // Directory that all ".model" checkpoints (and their paired ".config"
+    // state files) are saved to and loaded from.
+    private static final String SAVED_MODELS_DIR = "saved_models";
     private static double LEARNING_RATE = 0.05;
     private static final int BATCH_SIZE = 40;
     private static final int EPOCHS = 20;
@@ -33,6 +37,21 @@ public class TrainingConfig {
 
     public static String getMnistCsvFolderPath() {
         return MNIST_CSV_FOLDER_PATH;
+    }
+
+    public static String getSavedModelsDir() {
+        return SAVED_MODELS_DIR;
+    }
+
+    /**
+     * Ensures the saved-models directory exists, creating it (and any
+     * missing parent directories) if necessary. Safe to call repeatedly.
+     */
+    public static void ensureSavedModelsDir() {
+        File dir = new File(SAVED_MODELS_DIR);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
     }
 
     public static double getLearningRate(int epoch) {
@@ -63,6 +82,11 @@ public class TrainingConfig {
         return TESTING_OUTPUT_FILE;
     }
 
+    /**
+     * Returns just the checkpoint filename (no directory) for the given
+     * epoch, e.g. "2026-07-30_10_00_epoch_4.model". Callers that need the
+     * full on-disk path should join this with getSavedModelsDir().
+     */
     public static String getCurrentModelName(int epoch) {
         return DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm").format(LocalDateTime.now()) + "_epoch_" + epoch + ".model";
     }

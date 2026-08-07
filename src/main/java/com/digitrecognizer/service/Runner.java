@@ -105,11 +105,15 @@ public class Runner {
     }
 
     /**
-     * Finds the most recently modified ".model" file in the current working
-     * directory, or null if none exist.
+     * Finds the most recently modified ".model" file in the saved models
+     * directory (TrainingConfig.getSavedModelsDir()), or null if none exist
+     * or the directory doesn't exist yet.
      */
     private File findLatestModelFile() {
-        File dir = new File(".");
+        File dir = new File(TrainingConfig.getSavedModelsDir());
+        if (!dir.exists()) {
+            return null;
+        }
         File[] modelFiles = dir.listFiles((d, name) -> name.endsWith(".model"));
         if (modelFiles == null || modelFiles.length == 0) {
             return null;
@@ -121,8 +125,9 @@ public class Runner {
 
     /**
      * Derives the training-config state filename that pairs with a given
-     * ".model" checkpoint file, e.g. "2026-07-30_10_00_epoch_4.model" ->
-     * "2026-07-30_10_00_epoch_4.config".
+     * ".model" checkpoint file, e.g.
+     * "saved_models/2026-07-30_10_00_epoch_4.model" ->
+     * "saved_models/2026-07-30_10_00_epoch_4.config".
      */
     private String configPathFor(String modelPath) {
         return modelPath.endsWith(".model")
@@ -138,6 +143,8 @@ public class Runner {
 
         loadTrainData();
         loadValidationData();
+
+        TrainingConfig.ensureSavedModelsDir();
 
         MLP mlp;
         if (loadLatestModel) {
@@ -199,10 +206,11 @@ public class Runner {
             }
             System.out.println("Epoch " + (epoch + 1) + ", Loss: " + (epochLoss / x_train.length));
 
-            String modelFilename = TrainingConfig.getCurrentModelName(epoch);
-            mlp.save(modelFilename);
+            String modelPath = new File(TrainingConfig.getSavedModelsDir(),
+                    TrainingConfig.getCurrentModelName(epoch)).getPath();
+            mlp.save(modelPath);
             TrainingConfig.decrementEpochsRemaining();
-            TrainingConfig.save(configPathFor(modelFilename));
+            TrainingConfig.save(configPathFor(modelPath));
 
             boolean shouldStop = validateEpoch(mlp, epoch);
             if (shouldStop) {
