@@ -1,15 +1,17 @@
 package com.digitrecognizer.service;
 
 import com.digitrecognizer.models.MLP;
+import com.digitrecognizer.ui.DigitRecognizerUI;
 import com.digitrecognizer.utils.MnistDataLoader;
 import com.digitrecognizer.utils.TrainingConfig;
 import com.digitrecognizer.utils.Value;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Comparator;
+import java.util.Scanner;
+import javax.swing.SwingUtilities;
 
 public class Runner {
 
@@ -106,8 +108,8 @@ public class Runner {
 
     /**
      * Finds the most recently modified ".model" file in the saved models
-     * directory (TrainingConfig.getSavedModelsDir()), or null if none exist
-     * or the directory doesn't exist yet.
+     * directory (TrainingConfig.getSavedModelsDir()), or null if none exist or
+     * the directory doesn't exist yet.
      */
     private File findLatestModelFile() {
         File dir = new File(TrainingConfig.getSavedModelsDir());
@@ -263,11 +265,75 @@ public class Runner {
         System.out.println("Incorrect Predictions: " + incorrectPredictions);
     }
 
-    public static void main(String[] args) throws FileNotFoundException, IOException {
-        boolean loadLatestModel = args.length > 0 && Boolean.parseBoolean(args[0]);
+    public static void main(String[] args) throws IOException {
 
         Runner runner = new Runner();
-        runner.train(loadLatestModel);
-        runner.test();
+        Scanner scanner = new Scanner(System.in);
+
+        while (true) {
+            System.out.println();
+            System.out.println("====================================");
+            System.out.println("          Digit Recognizer");
+            System.out.println("====================================");
+            System.out.println("1. Train a new model");
+            System.out.println("2. Continue training latest model");
+            System.out.println("3. Test latest model");
+            System.out.println("4. Open Digit Recognizer UI");
+            System.out.println("5. Exit");
+            System.out.print("Enter your choice: ");
+
+            int choice;
+
+            try {
+                choice = Integer.parseInt(scanner.nextLine());
+            } catch (NumberFormatException ex) {
+                System.out.println("Invalid input.");
+                continue;
+            }
+
+            switch (choice) {
+                case 1 -> {
+                    System.out.println("\nStarting training from scratch...");
+                    runner.train(false);
+                    System.out.println("Training complete.");
+                }
+
+                case 2 -> {
+                    System.out.println("\nContinuing training from latest checkpoint...");
+                    runner.train(true);
+                    System.out.println("Training complete.");
+                }
+
+                case 3 -> {
+                    System.out.println("\nTesting latest model...");
+                    runner.test();
+                    System.out.println("Testing complete.");
+                }
+
+                case 4 -> {
+                    System.out.println("\nLaunching UI...");
+
+                    SwingUtilities.invokeLater(() -> {
+                        try {
+                            new DigitRecognizerUI().setVisible(true);
+                        } catch (IOException ex) {
+                            System.err.println("Failed to launch UI: " + ex.getMessage());
+                        }
+                    });
+
+                    // Exit so the Swing application owns the process.
+                    return;
+                }
+
+                case 5 -> {
+                    System.out.println("Goodbye!");
+                    scanner.close();
+                    return;
+                }
+
+                default ->
+                    System.out.println("Please enter a number between 1 and 5.");
+            }
+        }
     }
 }
