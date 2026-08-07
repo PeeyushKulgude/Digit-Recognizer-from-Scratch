@@ -1,5 +1,10 @@
 package com.digitrecognizer.utils;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -20,6 +25,11 @@ public class TrainingConfig {
     private static final double MIN_DELTA = 1e-3;
     // How many times we're willing to halve the LR before giving up and stopping.
     private static final int MAX_LEARNING_RATE_REDUCTIONS = 3;
+
+    // How many epochs are still left to run out of EPOCHS. Decremented as
+    // training completes epochs, saved/restored so a resumed run only trains
+    // for whatever budget remains instead of starting the full EPOCHS count over.
+    private static int EPOCHS_REMAINING = EPOCHS;
 
     public static String getMnistCsvFolderPath() {
         return MNIST_CSV_FOLDER_PATH;
@@ -67,5 +77,52 @@ public class TrainingConfig {
 
     public static int getMaxLearningRateReductions() {
         return MAX_LEARNING_RATE_REDUCTIONS;
+    }
+
+    public static int getEpochsRemaining() {
+        return EPOCHS_REMAINING;
+    }
+
+    /**
+     * Counts down the epoch budget by one. Never goes below zero.
+     */
+    public static void decrementEpochsRemaining() {
+        if (EPOCHS_REMAINING > 0) {
+            EPOCHS_REMAINING--;
+        }
+    }
+
+    /**
+     * Persists the mutable training config state - the learning rate (which
+     * changes over time via recalibrateLearningRate) and how many epochs are
+     * still left to run - so training can be resumed with the same state it
+     * left off with.
+     */
+    public static void save(String filename) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+            writer.write(Double.toString(LEARNING_RATE));
+            writer.newLine();
+            writer.write(Integer.toString(EPOCHS_REMAINING));
+            writer.newLine();
+        }
+    }
+
+    /**
+     * Restores the mutable training config state previously written by save().
+     * Missing or empty files/lines are treated as "nothing to restore" so
+     * callers can safely call this even if no config state was ever saved.
+     */
+    public static void load(String filename) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+            String lrLine = reader.readLine();
+            if (lrLine != null && !lrLine.trim().isEmpty()) {
+                LEARNING_RATE = Double.parseDouble(lrLine.trim());
+            }
+
+            String remainingLine = reader.readLine();
+            if (remainingLine != null && !remainingLine.trim().isEmpty()) {
+                EPOCHS_REMAINING = Integer.parseInt(remainingLine.trim());
+            }
+        }
     }
 }

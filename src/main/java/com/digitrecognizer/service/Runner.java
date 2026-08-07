@@ -119,6 +119,17 @@ public class Runner {
                 .orElse(null);
     }
 
+    /**
+     * Derives the training-config state filename that pairs with a given
+     * ".model" checkpoint file, e.g. "2026-07-30_10_00_epoch_4.model" ->
+     * "2026-07-30_10_00_epoch_4.config".
+     */
+    private String configPathFor(String modelPath) {
+        return modelPath.endsWith(".model")
+                ? modelPath.substring(0, modelPath.length() - ".model".length()) + ".config"
+                : modelPath + ".config";
+    }
+
     public void train(boolean loadLatestModel) throws IOException {
         File file = new File(TrainingConfig.getTrainingOutputFile());
         file.delete();
@@ -134,6 +145,17 @@ public class Runner {
             if (latestModel != null) {
                 mlp = MLP.load(latestModel.getPath());
                 System.out.println("Loaded latest model from " + latestModel.getPath() + " to resume training.");
+
+                String configPath = configPathFor(latestModel.getPath());
+                File configFile = new File(configPath);
+                if (configFile.exists()) {
+                    TrainingConfig.load(configPath);
+                    System.out.println("Loaded training config state from " + configPath
+                            + " (learning rate: " + TrainingConfig.getLearningRate(0) + ").");
+                } else {
+                    System.out.println("No matching config state file found at " + configPath
+                            + "; starting with default training config.");
+                }
             } else {
                 System.out.println("No existing .model file found. Starting training from scratch.");
                 mlp = new MLP(784, new int[]{128, 64, 10});
@@ -144,8 +166,17 @@ public class Runner {
         int batchSize = TrainingConfig.getBatchSize();
         int batchCount = x_train.length / batchSize;
 
+        // Only train for whatever epoch budget is left. On a fresh run this is
+        // the full TrainingConfig.getEpochs(); on a resumed run it's whatever
+        // was restored from the paired .config file, and startEpoch picks the
+        // absolute epoch numbering back up where it left off (for naming/logging).
+        int epochsToRun = TrainingConfig.getEpochsRemaining();
+        int startEpoch = TrainingConfig.getEpochs() - epochsToRun;
+        System.out.println("Running " + epochsToRun + " epoch(s), starting at epoch " + (startEpoch + 1) + ".");
+
         // Training loop
-        for (int epoch = 0; epoch < TrainingConfig.getEpochs(); epoch++) {
+        for (int epochOffset = 0; epochOffset < epochsToRun; epochOffset++) {
+            int epoch = startEpoch + epochOffset;
             double epochLoss = 0.0;
             for (int batchIndex = 0; batchIndex < batchCount; batchIndex++) {
                 int start = batchIndex * batchSize;
@@ -168,7 +199,10 @@ public class Runner {
             }
             System.out.println("Epoch " + (epoch + 1) + ", Loss: " + (epochLoss / x_train.length));
 
-            mlp.save(TrainingConfig.getCurrentModelName(epoch));
+            String modelFilename = TrainingConfig.getCurrentModelName(epoch);
+            mlp.save(modelFilename);
+            TrainingConfig.decrementEpochsRemaining();
+            TrainingConfig.save(configPathFor(modelFilename));
 
             boolean shouldStop = validateEpoch(mlp, epoch);
             if (shouldStop) {
@@ -185,7 +219,16 @@ public class Runner {
 
         loadTestData();
 
-        MLP trainedModel = MLP.load("mnist.model");
+        MLP trainedModel;
+
+        File latestModel = findLatestModelFile();
+        if (latestModel != null) {
+            trainedModel = MLP.load(latestModel.getPath());
+            System.out.println("Loaded latest model from " + latestModel.getPath() + " to test.");
+        } else {
+            System.out.println("No existing .model file found to test");
+            return;
+        }
 
         int correctPredictions = 0;
         int incorrectPredictions = 0;

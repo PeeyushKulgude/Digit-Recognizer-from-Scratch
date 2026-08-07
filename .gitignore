@@ -3,7 +3,5 @@
 out/
 src/main/resources/mnist.pkl
 src/main/resources/mnist_export/
-training_output.txt
-testing_output.txt
-*.model
+*_output.txt
 temp
