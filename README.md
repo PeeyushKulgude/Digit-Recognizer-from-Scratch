@@ -151,6 +151,54 @@ The project configuration is centralized in `TrainingConfig.java` and includes d
 
 These values can be adjusted for experimentation.
 
+## Test Results
+
+Results from evaluating the checkpoint `saved_models/2026-08-10_14_16_epoch_5.model` on the 10,000-image MNIST test set (full per-sample log in `testing_output.txt`):
+
+| Metric | Value |
+| --- | --- |
+| Correct predictions | 9,624 |
+| Incorrect predictions | 376 |
+| **Test accuracy** | **96.24%** |
+
+Per-digit accuracy:
+
+| Digit | Samples | Correct | Accuracy |
+| --- | --- | --- | --- |
+| 0 | 980 | 964 | 98.37% |
+| 1 | 1,135 | 1,116 | 98.33% |
+| 2 | 1,032 | 990 | 95.93% |
+| 3 | 1,010 | 978 | 96.83% |
+| 4 | 982 | 946 | 96.33% |
+| 5 | 892 | 838 | 93.95% |
+| 6 | 958 | 933 | 97.39% |
+| 7 | 1,028 | 983 | 95.62% |
+| 8 | 974 | 931 | 95.59% |
+| 9 | 1,009 | 945 | 93.66% |
+
+Excerpt of the test output:
+
+```text
+Loaded X_test with shape: 10000x784
+Loaded y_test with shape: 10000x10
+Loaded latest model from saved_models\2026-08-10_14_16_epoch_5.model to test.
+Test Sample 1: Predicted Label: 7, True Label: 7
+Test Sample 2: Predicted Label: 2, True Label: 2
+Test Sample 3: Predicted Label: 1, True Label: 1
+Test Sample 4: Predicted Label: 0, True Label: 0
+Test Sample 5: Predicted Label: 4, True Label: 4
+Test Sample 6: Predicted Label: 1, True Label: 1
+Test Sample 7: Predicted Label: 4, True Label: 4
+Test Sample 8: Predicted Label: 9, True Label: 9
+Test Sample 9: Predicted Label: 6, True Label: 5
+Test Sample 10: Predicted Label: 9, True Label: 9
+...
+Test Sample 10000: Predicted Label: 6, True Label: 6
+Correct Predictions: 9624
+Incorrect Predictions: 376
+Testing complete.
+```
+
 ## Implementation Notes
 
 The network is intentionally small and educational. It includes:
